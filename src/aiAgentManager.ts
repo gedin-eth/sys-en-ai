@@ -1,3 +1,5 @@
+// AI Agent Manager - Handles AI agent operations
+// test comment
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';

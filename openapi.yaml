@@ -259,14 +259,35 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApplyRequest'
+              type: object
+              required:
+                - file
+                - changes
+              properties:
+                file:
+                  type: string
+                  description: File path to apply the patch to
+                  example: src/example.js
+                changes:
+                  type: string
+                  description: Git-style diff/patch content
+                  example: |
+                    diff --git a/src/example.js b/src/example.js
+                    ...
       responses:
         '200':
-          description: Changes applied successfully
+          description: Change applied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApplyResponse'
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  file:
+                    type: string
+                    example: src/example.js
         '400':
           description: Invalid change data or file conflicts
           content:

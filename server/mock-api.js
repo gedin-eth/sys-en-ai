@@ -5,6 +5,7 @@ const app = express();
 const port = 3000;
 const fs = require('fs');
 const { execSync } = require('child_process');
+const path = require('path');
 
 // Middleware
 app.use(cors());
@@ -115,39 +116,83 @@ app.post('/api/changes', (req, res) => {
 // Apply changes endpoint
 app.post('/api/apply', (req, res) => {
     try {
-        const filePath = req.body.file;
-        const patch = req.body.changes;
-        // Fail-fast validation for ChatGPT compatibility
-        if (!filePath || !patch) {
+        // Debug logging
+        console.log('[debug] Received payload:', JSON.stringify(req.body, null, 2));
+        
+        // Validate Content-Type
+        if (!req.is('application/json')) {
+            return res.status(415).json({ error: 'Content-Type must be application/json' });
+        }
+        
+        const { file, changes: patchContent } = req.body;
+        
+        // Proper type validation
+        if (typeof file !== 'string' || typeof patchContent !== 'string') {
             return res.status(400).json({ 
-                error: "Missing required fields: file and changes" 
+                error: 'Missing required fields: file and changes',
+                received: { file: typeof file, changes: typeof patchContent }
             });
         }
-        // Save patch to a temp file
+        
+        if (!file.trim() || !patchContent.trim()) {
+            return res.status(400).json({ 
+                error: 'File and changes fields cannot be empty',
+                received: { file: file, changes: patchContent.substring(0, 100) + '...' }
+            });
+        }
+        
+        // 1. Verify git repository
+        try {
+            execSync('git rev-parse --is-inside-work-tree', { cwd: path.join(process.cwd(), '..') });
+        } catch {
+            return res.status(500).json({ error: 'Project is not a git repository' });
+        }
+        
+        // 2. Parse patch header for file path
+        const match = patchContent.match(/^\+\+\+\s+[ab]?\/?(.+)$/m);
+        if (!match) {
+            return res.status(400).json({ error: 'Invalid patch format: missing +++ header' });
+        }
+        const relativePath = match[1].trim();
+        
+        // 3. Validate file is tracked by git (use the provided file path, not the patch path)
+        try {
+            execSync(`git ls-files --error-unmatch "${file}"`, { cwd: path.join(process.cwd(), '..') });
+        } catch {
+            return res.status(400).json({ error: `File ${file} not tracked by git` });
+        }
+        
+        // 4. Write patch to temp file
         const tmpPatchPath = '/tmp/patch.diff';
         try {
-            fs.writeFileSync(tmpPatchPath, patch);
+            fs.writeFileSync(tmpPatchPath, patchContent);
         } catch (err) {
             console.error('Failed to write patch file:', err);
-            return res.status(500).json({ error: 'Failed to write patch file' });
+            return res.status(500).json({ error: 'Failed to write patch file', details: err.message });
         }
-        // Apply patch using git
+        
+        // 5. Dry-run patch
         try {
-            execSync(`git apply ${tmpPatchPath}`, { cwd: process.cwd() });
+            execSync(`git apply --check ${tmpPatchPath}`, { cwd: path.join(process.cwd(), '..'), stdio: 'pipe' });
         } catch (err) {
-            console.error('Failed to apply patch:', err);
-            return res.status(500).json({ error: 'Failed to apply patch' });
+            return res.status(400).json({ error: 'Patch cannot be applied cleanly', details: err.message });
         }
-        // Update agent state
+        
+        // 6. Apply patch
+        try {
+            execSync(`git apply ${tmpPatchPath}`, { cwd: path.join(process.cwd(), '..'), stdio: 'pipe' });
+        } catch (err) {
+            return res.status(500).json({ error: 'Failed to apply patch', details: err.message });
+        }
+        
         agentState.lastSync = new Date();
-        // Add to changes history
         const appliedChange = {
             id: Date.now().toString(),
             type: 'file',
-            path: filePath,
+            path: file,
             operation: 'update',
-            content: patch,
-            diff: patch,
+            content: patchContent,
+            diff: patchContent,
             metadata: {
                 author: 'ai-agent',
                 timestamp: new Date(),
@@ -156,16 +201,10 @@ app.post('/api/apply', (req, res) => {
             status: 'applied'
         };
         changes.push(appliedChange);
-        // Return ChatGPT-compatible response format
-        res.json({ 
-            success: true, 
-            file: filePath 
-        });
+        res.json({ success: true, file: file });
     } catch (error) {
         console.error('Error applying changes:', error);
-        res.status(500).json({ 
-            error: 'Failed to apply changes' 
-        });
+        res.status(500).json({ error: 'Failed to apply changes', details: error.message });
     }
 });
 
