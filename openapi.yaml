@@ -1,0 +1,865 @@
+openapi: 3.1.0
+info:
+  title: Cursor AI Agent API
+  description: |
+    Comprehensive API for ChatGPT Web Agent interaction with Cursor AI Agent extension.
+    Provides task management, code verification, and change application capabilities.
+  version: 1.0.0
+  contact:
+    name: Cursor AI Agent Team
+    email: support@cursor-ai-agent.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://b58cb0d0b1f7.ngrok-free.app
+    description: Production server
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/lint:
+    post:
+      summary: Run syntax check on code diffs
+      description: |
+        Validates code syntax and structure for the provided diff or content.
+        Returns detailed linting results including errors and warnings.
+      operationId: runSyntaxCheck
+      tags:
+        - Verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LintRequest'
+      responses:
+        '200':
+          description: Syntax check completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LintResponse'
+        '400':
+          description: Invalid request format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - Invalid or missing bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error during syntax check
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/test-cases:
+    post:
+      summary: Execute edge-case testing
+      description: |
+        Runs comprehensive test cases to validate edge cases and potential issues
+        in the provided code changes. Returns detailed test results with execution times.
+      operationId: executeTestCases
+      tags:
+        - Verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestRequest'
+      responses:
+        '200':
+          description: Test cases executed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestResponse'
+        '400':
+          description: Invalid request format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - Invalid or missing bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error during test execution
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/regression-check:
+    post:
+      summary: Perform integration validation
+      description: |
+        Executes regression tests and integration validation to ensure changes
+        don't break existing functionality. Compares before/after metrics.
+      operationId: performRegressionCheck
+      tags:
+        - Verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegressionRequest'
+      responses:
+        '200':
+          description: Regression check completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegressionResponse'
+        '400':
+          description: Invalid request format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - Invalid or missing bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error during regression check
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/tasks:
+    get:
+      summary: List current bugs/features
+      description: |
+        Retrieves all current tasks including bugs, features, and other work items.
+        Supports filtering by status, priority, and type.
+      operationId: listTasks
+      tags:
+        - Tasks
+      parameters:
+        - name: status
+          in: query
+          description: Filter tasks by status
+          schema:
+            type: string
+            enum: [pending, in_progress, completed, failed]
+        - name: priority
+          in: query
+          description: Filter tasks by priority
+          schema:
+            type: string
+            enum: [low, medium, high, critical]
+        - name: type
+          in: query
+          description: Filter tasks by type
+          schema:
+            type: string
+            enum: [bug, feature, status, diff, logs]
+        - name: limit
+          in: query
+          description: Maximum number of tasks to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: offset
+          in: query
+          description: Number of tasks to skip for pagination
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Tasks retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskListResponse'
+        '401':
+          description: Unauthorized - Invalid or missing bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      summary: Submit new tasks
+      description: |
+        Creates a new task with the specified details. Tasks can be bugs, features,
+        or other work items that need to be addressed.
+      operationId: createTask
+      tags:
+        - Tasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreateRequest'
+      responses:
+        '201':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+        '400':
+          description: Invalid task data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - Invalid or missing bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/apply:
+    post:
+      summary: Apply code changes
+      description: |
+        Applies the specified code changes to the workspace. Changes can include
+        file modifications, creations, deletions, or renames.
+      operationId: applyChanges
+      tags:
+        - Changes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplyRequest'
+      responses:
+        '200':
+          description: Changes applied successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplyResponse'
+        '400':
+          description: Invalid change data or file conflicts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - Invalid or missing bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: File conflicts detected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error during change application
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/status:
+    get:
+      summary: Retrieve sync status
+      description: |
+        Returns the current synchronization status, including connection state,
+        last sync time, and any pending operations.
+      operationId: getStatus
+      tags:
+        - Status
+      responses:
+        '200':
+          description: Status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+        '401':
+          description: Unauthorized - Invalid or missing bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Bearer token authentication. Include the token in the Authorization header
+        as 'Bearer <token>'.
+
+  schemas:
+    # Request Schemas
+    LintRequest:
+      type: object
+      required:
+        - path
+      properties:
+        path:
+          type: string
+          description: File path to be linted
+          example: "src/auth.js"
+        content:
+          type: string
+          description: Full file content for linting
+          example: "function validateToken(token) {\n  return token.length > 0;\n}"
+        diff:
+          type: string
+          description: Git-style diff of changes
+          example: "@@ -1,3 +1,5 @@\n-function validateToken(token) {\n+function validateToken(token) {\n+  if (!token) return false;\n   return token.length > 0;\n }"
+
+    TestRequest:
+      type: object
+      required:
+        - path
+      properties:
+        path:
+          type: string
+          description: File path to be tested
+          example: "src/auth.js"
+        content:
+          type: string
+          description: Full file content for testing
+        diff:
+          type: string
+          description: Git-style diff of changes
+        testConfig:
+          type: object
+          description: Test configuration options
+          properties:
+            includeEdgeCases:
+              type: boolean
+              default: true
+            timeout:
+              type: integer
+              default: 30000
+            maxTestCases:
+              type: integer
+              default: 100
+
+    RegressionRequest:
+      type: object
+      required:
+        - path
+      properties:
+        path:
+          type: string
+          description: File path to be validated
+          example: "src/auth.js"
+        content:
+          type: string
+          description: Full file content for validation
+        diff:
+          type: string
+          description: Git-style diff of changes
+        baselineMetrics:
+          type: object
+          description: Baseline metrics for comparison
+          properties:
+            responseTime:
+              type: number
+            memoryUsage:
+              type: number
+            cpuUsage:
+              type: number
+
+    TaskCreateRequest:
+      type: object
+      required:
+        - type
+        - title
+        - priority
+      properties:
+        type:
+          type: string
+          enum: [bug, feature, status, diff, logs]
+          description: Type of task
+          example: "bug"
+        title:
+          type: string
+          description: Task title
+          example: "Fix authentication token validation"
+        description:
+          type: string
+          description: Detailed task description
+          example: "Authentication tokens are not being validated properly"
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+          description: Task priority level
+          example: "high"
+        labels:
+          type: array
+          items:
+            type: string
+          description: Task labels for categorization
+          example: ["bug", "high", "auth"]
+        assignee:
+          type: string
+          description: Assigned user or agent
+          example: "ai-agent"
+
+    ApplyRequest:
+      type: object
+      required:
+        - changes
+      properties:
+        changes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Change'
+          description: List of changes to apply
+        taskId:
+          type: string
+          description: Associated task ID
+          example: "task-123"
+        autoVerify:
+          type: boolean
+          default: true
+          description: Whether to automatically run verification after applying
+
+    # Response Schemas
+    LintResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            passed:
+              type: boolean
+              description: Whether the syntax check passed
+              example: true
+            errors:
+              type: array
+              items:
+                type: string
+              description: List of syntax errors
+              example: []
+            warnings:
+              type: array
+              items:
+                type: string
+              description: List of syntax warnings
+              example: ["Consider adding JSDoc comments"]
+            suggestions:
+              type: array
+              items:
+                type: string
+              description: Code improvement suggestions
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00.000Z"
+
+    TestResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            passed:
+              type: boolean
+              description: Whether all test cases passed
+              example: true
+            testCases:
+              type: array
+              items:
+                $ref: '#/components/schemas/TestCase'
+            summary:
+              type: object
+              properties:
+                total:
+                  type: integer
+                  example: 5
+                passed:
+                  type: integer
+                  example: 5
+                failed:
+                  type: integer
+                  example: 0
+                executionTime:
+                  type: number
+                  example: 1250.5
+        timestamp:
+          type: string
+          format: date-time
+
+    RegressionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            passed:
+              type: boolean
+              description: Whether regression tests passed
+              example: true
+            regressionTests:
+              type: array
+              items:
+                $ref: '#/components/schemas/RegressionTest'
+            performanceImpact:
+              type: object
+              properties:
+                responseTime:
+                  type: object
+                  properties:
+                    before:
+                      type: number
+                      example: 150
+                    after:
+                      type: number
+                      example: 145
+                    difference:
+                      type: number
+                      example: -5
+                    percentage:
+                      type: number
+                      example: -3.33
+        timestamp:
+          type: string
+          format: date-time
+
+    TaskListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+        pagination:
+          type: object
+          properties:
+            total:
+              type: integer
+              example: 25
+            limit:
+              type: integer
+              example: 50
+            offset:
+              type: integer
+              example: 0
+            hasMore:
+              type: boolean
+              example: false
+        timestamp:
+          type: string
+          format: date-time
+
+    TaskResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/Task'
+        timestamp:
+          type: string
+          format: date-time
+
+    ApplyResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            appliedChanges:
+              type: array
+              items:
+                $ref: '#/components/schemas/Change'
+            failedChanges:
+              type: array
+              items:
+                $ref: '#/components/schemas/Change'
+            conflicts:
+              type: array
+              items:
+                type: string
+              description: List of file conflicts
+            verificationResults:
+              type: object
+              properties:
+                syntaxCheck:
+                  $ref: '#/components/schemas/LintResponse'
+                testCases:
+                  $ref: '#/components/schemas/TestResponse'
+                regressionCheck:
+                  $ref: '#/components/schemas/RegressionResponse'
+        timestamp:
+          type: string
+          format: date-time
+
+    StatusResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            connection:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [connected, disconnected, reconnecting]
+                  example: "connected"
+                lastHeartbeat:
+                  type: string
+                  format: date-time
+                  example: "2024-01-01T00:00:00.000Z"
+            sync:
+              type: object
+              properties:
+                lastSync:
+                  type: string
+                  format: date-time
+                  example: "2024-01-01T00:00:00.000Z"
+                pendingTasks:
+                  type: integer
+                  example: 5
+                pendingChanges:
+                  type: integer
+                  example: 2
+            workspace:
+              type: object
+              properties:
+                rootPath:
+                  type: string
+                  example: "/workspace"
+                totalFiles:
+                  type: integer
+                  example: 150
+                modifiedFiles:
+                  type: integer
+                  example: 3
+        timestamp:
+          type: string
+          format: date-time
+
+    # Core Data Schemas
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "task-123"
+        type:
+          type: string
+          enum: [bug, feature, status, diff, logs]
+          example: "bug"
+        title:
+          type: string
+          example: "Fix authentication token validation"
+        description:
+          type: string
+          example: "Authentication tokens are not being validated properly"
+        status:
+          type: string
+          enum: [pending, in_progress, completed, failed]
+          example: "pending"
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+          example: "high"
+        labels:
+          type: array
+          items:
+            type: string
+          example: ["bug", "high", "auth"]
+        assignee:
+          type: string
+          example: "ai-agent"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00.000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00.000Z"
+
+    Change:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "change-456"
+        taskId:
+          type: string
+          example: "task-123"
+        type:
+          type: string
+          enum: [file, directory, config]
+          example: "file"
+        path:
+          type: string
+          example: "src/auth.js"
+        operation:
+          type: string
+          enum: [create, update, delete, rename]
+          example: "update"
+        content:
+          type: string
+          description: Full file content
+          example: "function validateToken(token) {\n  if (!token) return false;\n  return token.length > 0;\n}"
+        diff:
+          type: string
+          description: Git-style diff
+          example: "@@ -1,3 +1,5 @@\n-function validateToken(token) {\n+function validateToken(token) {\n+  if (!token) return false;\n   return token.length > 0;\n }"
+        metadata:
+          type: object
+          properties:
+            author:
+              type: string
+              example: "ai-agent"
+            timestamp:
+              type: string
+              format: date-time
+              example: "2024-01-01T00:00:00.000Z"
+            version:
+              type: string
+              example: "1.0"
+            rollbackLink:
+              type: string
+              example: "https://github.com/repo/commit/abc123"
+        status:
+          type: string
+          enum: [pending, applied, verified, failed]
+          example: "pending"
+
+    TestCase:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Empty token test"
+        passed:
+          type: boolean
+          example: true
+        error:
+          type: string
+          description: Error message if test failed
+        executionTime:
+          type: number
+          description: Test execution time in milliseconds
+          example: 15.5
+        details:
+          type: object
+          description: Additional test details
+          additionalProperties: true
+
+    RegressionTest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Authentication flow"
+        passed:
+          type: boolean
+          example: true
+        beforeMetrics:
+          type: object
+          description: Metrics before the change
+          additionalProperties: true
+        afterMetrics:
+          type: object
+          description: Metrics after the change
+          additionalProperties: true
+        difference:
+          type: number
+          description: Percentage difference
+          example: -5.0
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          description: Error message
+          example: "Invalid request format"
+        code:
+          type: string
+          description: Error code
+          example: "INVALID_REQUEST"
+        details:
+          type: object
+          description: Additional error details
+          additionalProperties: true
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00.000Z"
+
+tags:
+  - name: Verification
+    description: Code verification and testing endpoints
+  - name: Tasks
+    description: Task management operations
+  - name: Changes
+    description: Code change application
+  - name: Status
+    description: System status and monitoring 

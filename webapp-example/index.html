@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Agent Webapp Integration</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card h2 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .task {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .task.bug {
+            border-left-color: #dc3545;
+        }
+        
+        .task.feature {
+            border-left-color: #28a745;
+        }
+        
+        .task h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        
+        .task p {
+            margin: 5px 0;
+            color: #666;
+        }
+        
+        .priority {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .priority.high {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .priority.medium {
+            background: #ffc107;
+            color: #333;
+        }
+        
+        .priority.low {
+            background: #28a745;
+            color: white;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .form-group textarea {
+            height: 80px;
+            resize: vertical;
+        }
+        
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .btn:hover {
+            background: #5a6fd8;
+        }
+        
+        .status {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .status.connected {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+        }
+        
+        .status.disconnected {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤖 AI Agent Webapp Integration</h1>
+        <p>Real-time task management and code verification</p>
+    </div>
+
+    <div class="status" id="connectionStatus">
+        <strong>Connection Status:</strong> <span id="statusText">Connecting...</span>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2>📋 Current Tasks</h2>
+            <div id="tasksList">
+                <div class="loading">Loading tasks...</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>➕ Create New Task</h2>
+            <form id="taskForm">
+                <div class="form-group">
+                    <label for="taskType">Type:</label>
+                    <select id="taskType" required>
+                        <option value="bug">🐛 Bug</option>
+                        <option value="feature">✨ Feature</option>
+                        <option value="status">📊 Status</option>
+                        <option value="diff">🔄 Diff</option>
+                        <option value="logs">📝 Logs</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="taskTitle">Title:</label>
+                    <input type="text" id="taskTitle" placeholder="Enter task title" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="taskDescription">Description:</label>
+                    <textarea id="taskDescription" placeholder="Enter task description"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="taskPriority">Priority:</label>
+                    <select id="taskPriority" required>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn">Create Task</button>
+            </form>
+            <div id="formMessage"></div>
+        </div>
+    </div>
+
+    <div class="card" style="grid-column: 1 / -1; margin-top: 30px;">
+        <h2>🔍 Code Verification</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div>
+                <h3>Syntax Check</h3>
+                <div class="form-group">
+                    <label for="codePath">File Path:</label>
+                    <input type="text" id="codePath" placeholder="src/example.js">
+                </div>
+                <div class="form-group">
+                    <label for="codeContent">Code Content:</label>
+                    <textarea id="codeContent" placeholder="function example() {\n  return 'Hello World';\n}"></textarea>
+                </div>
+                <button onclick="runLint()" class="btn">Run Syntax Check</button>
+                <div id="lintResult"></div>
+            </div>
+            <div>
+                <h3>Test Cases</h3>
+                <div class="form-group">
+                    <label for="testPath">File Path:</label>
+                    <input type="text" id="testPath" placeholder="src/example.js">
+                </div>
+                <button onclick="runTests()" class="btn">Run Tests</button>
+                <div id="testResult"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000';
+        const WS_URL = 'ws://localhost:3001';
+        
+        let ws = null;
+        let tasks = [];
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchTasks();
+            connectWebSocket();
+            setupForm();
+        });
+
+        // Fetch tasks from API
+        async function fetchTasks() {
+            try {
+                const response = await fetch(`${API_BASE}/api/tasks`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    tasks = data.data;
+                    renderTasks();
+                    updateConnectionStatus('connected');
+                } else {
+                    throw new Error(data.error || 'Failed to fetch tasks');
+                }
+            } catch (error) {
+                console.error('Error fetching tasks:', error);
+                updateConnectionStatus('disconnected');
+                showError('Failed to fetch tasks: ' + error.message);
+            }
+        }
+
+        // Render tasks in the UI
+        function renderTasks() {
+            const tasksList = document.getElementById('tasksList');
+            
+            if (tasks.length === 0) {
+                tasksList.innerHTML = '<div class="loading">No tasks found</div>';
+                return;
+            }
+
+            tasksList.innerHTML = tasks.map(task => `
+                <div class="task ${task.type}">
+                    <h3>${task.title}</h3>
+                    <p>${task.description || 'No description'}</p>
+                    <p><strong>Status:</strong> ${task.status}</p>
+                    <span class="priority ${task.priority}">${task.priority}</span>
+                </div>
+            `).join('');
+        }
+
+        // Connect to WebSocket for real-time updates
+        function connectWebSocket() {
+            ws = new WebSocket(WS_URL);
+            
+            ws.onopen = function() {
+                console.log('WebSocket connected');
+                updateConnectionStatus('connected');
+            };
+            
+            ws.onmessage = function(event) {
+                const message = JSON.parse(event.data);
+                handleWebSocketMessage(message);
+            };
+            
+            ws.onclose = function() {
+                console.log('WebSocket disconnected');
+                updateConnectionStatus('disconnected');
+                // Try to reconnect after 5 seconds
+                setTimeout(connectWebSocket, 5000);
+            };
+            
+            ws.onerror = function(error) {
+                console.error('WebSocket error:', error);
+                updateConnectionStatus('disconnected');
+            };
+        }
+
+        // Handle WebSocket messages
+        function handleWebSocketMessage(message) {
+            switch (message.type) {
+                case 'task_update':
+                    // Update task in the list
+                    const taskIndex = tasks.findIndex(t => t.id === message.data.id);
+                    if (taskIndex >= 0) {
+                        tasks[taskIndex] = message.data;
+                    } else {
+                        tasks.push(message.data);
+                    }
+                    renderTasks();
+                    break;
+                    
+                case 'connection_established':
+                    console.log('WebSocket connection established');
+                    break;
+                    
+                case 'heartbeat':
+                    // Connection is alive
+                    break;
+            }
+        }
+
+        // Update connection status
+        function updateConnectionStatus(status) {
+            const statusElement = document.getElementById('connectionStatus');
+            const statusText = document.getElementById('statusText');
+            
+            statusElement.className = `status ${status}`;
+            statusText.textContent = status === 'connected' ? 'Connected' : 'Disconnected';
+        }
+
+        // Setup form submission
+        function setupForm() {
+            const form = document.getElementById('taskForm');
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const formData = {
+                    type: document.getElementById('taskType').value,
+                    title: document.getElementById('taskTitle').value,
+                    description: document.getElementById('taskDescription').value,
+                    priority: document.getElementById('taskPriority').value
+                };
+                
+                try {
+                    const response = await fetch(`${API_BASE}/api/tasks`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(formData)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        tasks.push(data.data);
+                        renderTasks();
+                        form.reset();
+                        showSuccess('Task created successfully!');
+                    } else {
+                        throw new Error(data.error || 'Failed to create task');
+                    }
+                } catch (error) {
+                    console.error('Error creating task:', error);
+                    showError('Failed to create task: ' + error.message);
+                }
+            });
+        }
+
+        // Run syntax check
+        async function runLint() {
+            const path = document.getElementById('codePath').value;
+            const content = document.getElementById('codeContent').value;
+            
+            if (!path || !content) {
+                showError('Please provide both file path and code content');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/lint`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ path, content })
+                });
+                
+                const data = await response.json();
+                const resultDiv = document.getElementById('lintResult');
+                
+                if (data.success) {
+                    const result = data.data;
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <strong>Syntax Check Result:</strong><br>
+                            Status: ${result.passed ? '✅ Passed' : '❌ Failed'}<br>
+                            ${result.warnings.length > 0 ? `Warnings: ${result.warnings.join(', ')}` : ''}
+                        </div>
+                    `;
+                } else {
+                    throw new Error(data.error || 'Lint check failed');
+                }
+            } catch (error) {
+                console.error('Error running lint:', error);
+                showError('Failed to run syntax check: ' + error.message);
+            }
+        }
+
+        // Run test cases
+        async function runTests() {
+            const path = document.getElementById('testPath').value;
+            
+            if (!path) {
+                showError('Please provide file path');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/test-cases`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ path })
+                });
+                
+                const data = await response.json();
+                const resultDiv = document.getElementById('testResult');
+                
+                if (data.success) {
+                    const result = data.data;
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <strong>Test Results:</strong><br>
+                            Status: ${result.passed ? '✅ Passed' : '❌ Failed'}<br>
+                            Tests Run: ${result.testCases.length}<br>
+                            Execution Time: ${result.summary?.executionTime || 'N/A'}ms
+                        </div>
+                    `;
+                } else {
+                    throw new Error(data.error || 'Test execution failed');
+                }
+            } catch (error) {
+                console.error('Error running tests:', error);
+                showError('Failed to run tests: ' + error.message);
+            }
+        }
+
+        // Show success message
+        function showSuccess(message) {
+            const formMessage = document.getElementById('formMessage');
+            formMessage.innerHTML = `<div class="success">${message}</div>`;
+            setTimeout(() => {
+                formMessage.innerHTML = '';
+            }, 3000);
+        }
+
+        // Show error message
+        function showError(message) {
+            const formMessage = document.getElementById('formMessage');
+            formMessage.innerHTML = `<div class="error">${message}</div>`;
+            setTimeout(() => {
+                formMessage.innerHTML = '';
+            }, 5000);
+        }
+    </script>
+</body>
+</html> 
