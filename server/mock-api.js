@@ -208,6 +208,53 @@ app.post('/api/apply', (req, res) => {
     }
 });
 
+// Git operations endpoint
+app.post('/api/git', (req, res) => {
+    try {
+        const { command, args } = req.body;
+        
+        // Validate command is allowed
+        const allowedCommands = ['add', 'commit', 'status'];
+        if (!allowedCommands.includes(command)) {
+            return res.status(400).json({ 
+                error: 'Unsupported git command',
+                allowedCommands: allowedCommands
+            });
+        }
+        
+        // Sanitize args to prevent shell injection
+        let sanitizedArgs = '';
+        if (args && typeof args === 'string') {
+            // Only allow safe characters for git commands
+            sanitizedArgs = args.replace(/[^a-zA-Z0-9\s\-_.,'"()]/g, '');
+        }
+        
+        // Construct git command
+        const gitCommand = `git ${command} ${sanitizedArgs}`.trim();
+        
+        // Execute git command from project root
+        const output = execSync(gitCommand, { 
+            cwd: path.join(process.cwd(), '..'),
+            stdio: 'pipe',
+            encoding: 'utf8'
+        });
+        
+        res.json({
+            success: true,
+            output: output,
+            command: gitCommand
+        });
+        
+    } catch (error) {
+        console.error('Git command failed:', error);
+        res.status(500).json({ 
+            error: 'Git execution failed', 
+            details: error.message,
+            command: req.body.command
+        });
+    }
+});
+
 // Status endpoint
 app.get('/api/status', (req, res) => {
     // Update agent state with current data

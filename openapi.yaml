@@ -313,6 +313,66 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/git:
+    post:
+      summary: Run Git commands
+      description: |
+        Executes safe Git operations like add, commit, and status.
+        Provides controlled access to Git functionality for the Web Agent.
+      operationId: runGitCommand
+      tags:
+        - Git
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [command]
+              properties:
+                command:
+                  type: string
+                  enum: [add, commit, status]
+                  description: Git command to execute
+                  example: "add"
+                args:
+                  type: string
+                  description: Arguments for the git command
+                  example: "-m 'Initial commit'"
+      responses:
+        '200':
+          description: Git command executed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  output:
+                    type: string
+                    description: Git command output
+                    example: "[main abc123] Initial commit"
+        '400':
+          description: Invalid command or arguments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - Invalid or missing bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Git execution failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/status:
     get:
       summary: Retrieve sync status
