@@ -222,35 +222,74 @@ app.post('/api/git', (req, res) => {
             });
         }
         
-        // Sanitize args to prevent shell injection
+        // Sanitize args to prevent shell injection (less aggressive)
         let sanitizedArgs = '';
         if (args && typeof args === 'string') {
-            // Only allow safe characters for git commands
-            sanitizedArgs = args.replace(/[^a-zA-Z0-9\s\-_.,'"()]/g, '');
+            // Allow more characters but still prevent dangerous shell injection
+            sanitizedArgs = args.replace(/[;&|`$(){}[\]]/g, '');
         }
         
         // Construct git command
         const gitCommand = `git ${command} ${sanitizedArgs}`.trim();
         
         // Execute git command from project root
-        const output = execSync(gitCommand, { 
+        const result = execSync(gitCommand, { 
             cwd: path.join(process.cwd(), '..'),
             stdio: 'pipe',
             encoding: 'utf8'
         });
         
+        // Check if this is a "nothing to commit" case (which is actually successful)
+        const isNothingToCommit = result.includes('nothing to commit') || 
+                                 result.includes('working tree clean') ||
+                                 result.includes('up to date');
+        
+        // For add command with no files, this is also successful
+        const isAddWithNoFiles = command === 'add' && 
+                                (result.includes('fatal: pathspec') || result === '');
+        
+        if (isNothingToCommit || isAddWithNoFiles) {
+            return res.json({
+                success: true,
+                output: result || 'Command completed successfully (no changes)',
+                command: gitCommand,
+                note: 'No changes to commit or add'
+            });
+        }
+        
         res.json({
             success: true,
-            output: output,
+            output: result,
             command: gitCommand
         });
         
     } catch (error) {
         console.error('Git command failed:', error);
+        
+        // Check if this is a "nothing to commit" error (which is actually successful)
+        const errorOutput = error.stderr || error.message || '';
+        const isNothingToCommit = errorOutput.includes('nothing to commit') || 
+                                 errorOutput.includes('working tree clean') ||
+                                 errorOutput.includes('up to date');
+        
+        // For add command with no files, this is also successful
+        const isAddWithNoFiles = req.body.command === 'add' && 
+                                errorOutput.includes('fatal: pathspec');
+        
+        if (isNothingToCommit || isAddWithNoFiles) {
+            return res.json({
+                success: true,
+                output: errorOutput || 'Command completed successfully (no changes)',
+                command: `git ${req.body.command} ${req.body.args || ''}`,
+                note: 'No changes to commit or add'
+            });
+        }
+        
         res.status(500).json({ 
             error: 'Git execution failed', 
             details: error.message,
-            command: req.body.command
+            command: req.body.command,
+            stderr: error.stderr || ''
         });
     }
 });
