@@ -5,14 +5,16 @@
   "main": "mock-api.js",
   "scripts": {
     "start": "node mock-api.js",
-    "dev": "nodemon mock-api.js"
+    "dev": "nodemon mock-api.js",
+    "autostart": "node start-server.js",
+    "test": "echo \"Running dummy tests\" && exit 0"
   },
   "dependencies": {
+    "cors": "^2.8.5",
     "express": "^4.18.2",
-    "ws": "^8.14.0",
-    "cors": "^2.8.5"
+    "ws": "^8.14.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.1.10"
   }
-} 
+}
