@@ -13,7 +13,7 @@ info:
     url: https://opensource.org/licenses/MIT
 
 servers:
-  - url: https://b58cb0d0b1f7.ngrok-free.app
+  - url: https://2c1a5f1ba10a.ngrok-free.app
     description: Production server
 
 security:
@@ -251,6 +251,7 @@ paths:
       description: |
         Applies the specified code changes to the workspace. Changes can include
         file modifications, creations, deletions, or renames.
+        Automatically stages untracked files before applying patches.
       operationId: applyChanges
       tags:
         - Changes
@@ -313,12 +314,175 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/filesystem:
+    post:
+      summary: File system operations
+      description: |
+        Provides file system access for reading, writing, and listing files.
+        Automatically stages untracked files in Git when writing.
+      operationId: fileSystemOperation
+      tags:
+        - FileSystem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [operation, path]
+              properties:
+                operation:
+                  type: string
+                  enum: [readFile, writeFile, listFiles]
+                  description: File system operation to perform
+                  example: "readFile"
+                path:
+                  type: string
+                  description: File or directory path
+                  example: "src/example.js"
+                content:
+                  type: string
+                  description: File content (required for writeFile operation)
+                  example: "console.log('Hello World');"
+      responses:
+        '200':
+          description: File system operation completed successfully
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ReadFileResponse'
+                  - $ref: '#/components/schemas/WriteFileResponse'
+                  - $ref: '#/components/schemas/ListFilesResponse'
+        '400':
+          description: Invalid operation or missing parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - Invalid or missing bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: File or directory not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: File system operation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/runCommand:
+    post:
+      summary: Execute shell commands
+      description: |
+        Executes shell commands in a sandboxed environment.
+        Provides controlled access to command execution for the Web Agent.
+      operationId: runCommand
+      tags:
+        - Execution
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cmd]
+              properties:
+                cmd:
+                  type: string
+                  description: Shell command to execute
+                  example: "echo 'Hello World'"
+      responses:
+        '200':
+          description: Command executed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  output:
+                    type: string
+                    description: Command output
+                    example: "Hello World"
+        '400':
+          description: Missing command parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - Invalid or missing bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Command execution failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/runTests:
+    post:
+      summary: Run test suite
+      description: |
+        Executes the project's test suite using npm test.
+        Returns test results and execution status.
+      operationId: runTests
+      tags:
+        - Testing
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                testScript:
+                  type: string
+                  description: Custom test script to run (optional)
+                  example: "npm run test:unit"
+      responses:
+        '200':
+          description: Tests executed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  output:
+                    type: string
+                    description: Test output
+                    example: "✓ All tests passed"
+        '401':
+          description: Unauthorized - Invalid or missing bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Test execution failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/git:
     post:
       summary: Run Git commands
       description: |
         Executes safe Git operations like add, commit, and status.
         Provides controlled access to Git functionality for the Web Agent.
+        Auto-stages untracked files when applying patches.
       operationId: runGitCommand
       tags:
         - Git
@@ -354,6 +518,14 @@ paths:
                     type: string
                     description: Git command output
                     example: "[main abc123] Initial commit"
+                  command:
+                    type: string
+                    description: The git command that was executed
+                    example: "git add ."
+                  note:
+                    type: string
+                    description: Additional information about the operation
+                    example: "No changes to commit or add"
         '400':
           description: Invalid command or arguments
           content:
@@ -912,6 +1084,63 @@ components:
           description: Percentage difference
           example: -5.0
 
+    # File System Response Schemas
+    ReadFileResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        content:
+          type: string
+          description: File content
+          example: "console.log('Hello World');"
+        path:
+          type: string
+          description: File path
+          example: "src/example.js"
+
+    WriteFileResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        path:
+          type: string
+          description: File path
+          example: "src/example.js"
+        message:
+          type: string
+          description: Success message
+          example: "File written successfully"
+
+    ListFilesResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        files:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                example: "example.js"
+              type:
+                type: string
+                enum: [file, directory]
+                example: "file"
+              path:
+                type: string
+                example: "src/example.js"
+        path:
+          type: string
+          description: Directory path that was listed
+          example: "src"
+
     ErrorResponse:
       type: object
       properties:
@@ -943,4 +1172,12 @@ tags:
   - name: Changes
     description: Code change application
   - name: Status
-    description: System status and monitoring 
+    description: System status and monitoring
+  - name: FileSystem
+    description: File system operations and management
+  - name: Git
+    description: Git version control operations
+  - name: Execution
+    description: Command execution and shell operations
+  - name: Testing
+    description: Test suite execution and management 

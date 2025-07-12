@@ -1,6 +1,6 @@
-# Cursor AI Agent Extension
+# System Engineering AI Agent
 
-A comprehensive extension for Cursor that provides integrated web AI agent support with automated task sync, change management, and triple verification.
+A comprehensive AI agent system for automated task sync, change management, and triple verification via REST API and WebSocket communication.
 
 ## Features
 
@@ -20,85 +20,61 @@ A comprehensive extension for Cursor that provides integrated web AI agent suppo
 - **Direct Application**: Apply diffs directly to workspace files
 - **Rollback Support**: Easy revert functionality with rollback links
 
-### 🎨 Enhanced UI
-- **Status Panel**: Clear display of new fixes, features, and error reports
-- **Color-coded Tags**: Visual indicators for [bug] (red), [feature] (blue), [error] (yellow)
-- **Real-time Updates**: Live status updates in the sidebar
-
 ### ✅ Triple Verification System
-After changes are applied, the extension automatically runs three verification steps:
+After changes are applied, the system automatically runs three verification steps:
 
 1. **Syntax Check**: Validates code syntax and structure
 2. **Edge Case Testing**: Comprehensive test case execution
 3. **Integration Validation**: Regression testing and performance validation
 
-## Installation
+## Quick Start
 
 1. Clone this repository
 2. Install dependencies:
    ```bash
    npm install
    ```
-3. Compile the extension:
+3. Start the server:
    ```bash
-   npm run compile
+   npm start
    ```
-4. Press F5 in VS Code to run the extension in development mode
+4. For development with auto-restart:
+   ```bash
+   npm run dev
+   ```
+
+## API Usage
+
+### Start Server with ngrok (for external access)
+```bash
+node scripts/start-server-and-ngrok.js
+```
+
+### Test API Endpoints
+```bash
+node test-openapi.js
+```
 
 ## Configuration
 
-Configure the extension in your VS Code settings:
+The system uses environment variables for configuration:
 
-```json
-{
-  "aiAgent.apiUrl": "http://localhost:3000",
-  "aiAgent.apiToken": "your-api-token-here",
-  "aiAgent.syncInterval": 30000,
-  "aiAgent.autoApply": false
-}
+```bash
+# API Configuration
+API_PORT=3000
+API_TOKEN=your-api-token-here
+SYNC_INTERVAL=30000
+AUTO_APPLY=false
 ```
 
-### Configuration Options
-
-- **apiUrl**: Web AI Agent API endpoint
-- **apiToken**: Authentication token for API access
-- **syncInterval**: Task synchronization interval in milliseconds
-- **autoApply**: Automatically apply verified changes
-
-## Usage
-
-### Commands
-
-The extension provides several commands accessible via the command palette:
-
-- `AI Agent: Sync Tasks` - Manually sync tasks from the AI agent
-- `AI Agent: Apply Changes` - Apply pending changes to workspace
-- `AI Agent: Verify Changes` - Run triple verification on applied changes
-- `AI Agent: Show Panel` - Open the AI Agent status panel
-
-### Sidebar Views
-
-The extension adds three new views to the sidebar:
-
-1. **Tasks**: Shows all tasks grouped by status
-2. **Changes**: Displays pending and applied changes
-3. **Logs**: Complete change history with timestamps
-
-### Status Panel
-
-The AI Agent Status Panel provides:
-- Real-time connection status
-- Task and change statistics
-- Quick action buttons
-- Recent activity feed
-
-## API Integration
-
-The extension expects the following API endpoints from your web AI agent:
+## API Endpoints
 
 ### Tasks API
 ```
 GET /api/tasks
+POST /api/tasks
+PUT /api/tasks/:id
+DELETE /api/tasks/:id
 ```
 
 ### Verification APIs
@@ -123,41 +99,33 @@ Tasks can be defined in a `tasks.md` file in your workspace:
 [bug] [low] Update error messages
 ```
 
+## Project Structure
+
+```
+├── server/                  # Backend server
+│   ├── start-server.js     # Server entry point
+│   ├── server/             # Server implementation
+│   └── package.json        # Server dependencies
+├── api/                    # API endpoints
+│   ├── execution/          # Command execution
+│   ├── fileSystem/         # File operations
+│   ├── git/               # Git operations
+│   └── testing/           # Test execution
+├── scripts/               # Utility scripts
+├── openapi.yaml           # API specification
+├── tasks.md              # Task definitions
+└── webapp-example/       # Example web interface
+```
+
 ## Development
 
-### Project Structure
-
-```
-src/
-├── extension.ts              # Main extension entry point
-├── aiAgentManager.ts         # Core AI agent management
-├── types/index.ts           # TypeScript type definitions
-├── providers/               # Tree data providers
-│   ├── taskProvider.ts
-│   ├── changeProvider.ts
-│   └── logProvider.ts
-└── ui/                      # UI components
-    └── aiAgentPanel.ts
-```
-
-### Building
-
+### Running Tests
 ```bash
-# Install dependencies
-npm install
-
-# Compile TypeScript
-npm run compile
-
-# Watch for changes
-npm run watch
-
-# Run tests
 npm test
-
-# Lint code
-npm run lint
 ```
+
+### API Documentation
+The complete API specification is available in `openapi.yaml` and can be viewed with any OpenAPI viewer.
 
 ## Contributing
 

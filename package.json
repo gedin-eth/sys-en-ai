@@ -1,116 +1,23 @@
 {
-  "name": "cursor-ai-agent-extension",
-  "displayName": "Cursor AI Agent Extension",
-  "description": "Integrated web AI agent support for Cursor with automated task sync and triple verification",
+  "name": "sys-en-ai",
+  "description": "System Engineering AI Agent with automated task sync and triple verification",
   "version": "1.0.0",
-  "engines": {
-    "vscode": "^1.85.0"
-  },
-  "categories": [
-    "Other"
-  ],
-  "activationEvents": [
-    "onStartupFinished"
-  ],
-  "main": "./out/extension.js",
-  "contributes": {
-    "commands": [
-      {
-        "command": "aiAgent.syncTasks",
-        "title": "Sync AI Agent Tasks",
-        "category": "AI Agent"
-      },
-      {
-        "command": "aiAgent.applyChanges",
-        "title": "Apply AI Agent Changes",
-        "category": "AI Agent"
-      },
-      {
-        "command": "aiAgent.verifyChanges",
-        "title": "Triple Verify Changes",
-        "category": "AI Agent"
-      },
-      {
-        "command": "aiAgent.showPanel",
-        "title": "Show AI Agent Panel",
-        "category": "AI Agent"
-      }
-    ],
-    "viewsContainers": {
-      "activitybar": [
-        {
-          "id": "ai-agent",
-          "title": "AI Agent",
-          "icon": "resources/ai-agent-icon.svg"
-        }
-      ]
-    },
-    "views": {
-      "ai-agent": [
-        {
-          "id": "aiAgentTasks",
-          "name": "Tasks",
-          "when": "aiAgent.enabled"
-        },
-        {
-          "id": "aiAgentChanges",
-          "name": "Changes",
-          "when": "aiAgent.enabled"
-        },
-        {
-          "id": "aiAgentLogs",
-          "name": "Logs",
-          "when": "aiAgent.enabled"
-        }
-      ]
-    },
-    "configuration": {
-      "title": "AI Agent",
-      "properties": {
-        "aiAgent.apiUrl": {
-          "type": "string",
-          "default": "http://localhost:3000",
-          "description": "Web AI Agent API URL"
-        },
-        "aiAgent.apiToken": {
-          "type": "string",
-          "description": "API token for authentication"
-        },
-        "aiAgent.syncInterval": {
-          "type": "number",
-          "default": 30000,
-          "description": "Task sync interval in milliseconds"
-        },
-        "aiAgent.autoApply": {
-          "type": "boolean",
-          "default": false,
-          "description": "Automatically apply verified changes"
-        }
-      }
-    }
-  },
+  "main": "server/start-server.js",
   "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile && npm run lint",
-    "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
-  },
-  "devDependencies": {
-    "@types/node": "18.x",
-    "@types/uuid": "^10.0.0",
-    "@types/vscode": "^1.85.0",
-    "@types/ws": "^8.18.1",
-    "@typescript-eslint/eslint-plugin": "^6.0.0",
-    "@typescript-eslint/parser": "^6.0.0",
-    "eslint": "^8.0.0",
-    "typescript": "^5.0.0"
+    "start": "node server/start-server.js",
+    "dev": "nodemon server/start-server.js",
+    "test": "node test-openapi.js"
   },
   "dependencies": {
     "axios": "^1.6.0",
     "js-yaml": "^4.1.0",
     "uuid": "^9.0.0",
     "ws": "^8.14.0"
+  },
+  "devDependencies": {
+    "@types/node": "18.x",
+    "@types/uuid": "^10.0.0",
+    "@types/ws": "^8.18.1",
+    "nodemon": "^3.0.0"
   }
 }

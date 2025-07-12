@@ -2,20 +2,17 @@
 
 This file contains tasks that will be automatically synced with the AI agent.
 
-## Bug Fixes
+## Current Tasks
 
-[bug] [high] Fix authentication token validation
-[bug] [medium] Resolve WebSocket connection timeout issues
-[bug] [low] Update error message formatting
+*No tasks currently defined.*
 
-## Features
+## Task Template
 
-[feature] [high] Add real-time task synchronization
-[feature] [medium] Implement change rollback functionality
-[feature] [low] Add task priority filtering
+To add a new task, use this format:
+```
+[type] [priority] Task title
+```
 
-## Improvements
-
-[feature] [medium] Enhance triple verification system
-[bug] [low] Fix status panel refresh rate
-[feature] [low] Add task export functionality 
+Where:
+- `type` can be: bug, feature, improvement
+- `priority` can be: low, medium, high, critical 
